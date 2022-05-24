@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - master
+      - main
 
 jobs:
   build:
@@ -38,6 +38,7 @@ jobs:
     container: docker://grafana/k6:0.38.3
     needs: [build]
 
+    steps:
     - name: Checkout
       uses: actions/checkout@v1
     
