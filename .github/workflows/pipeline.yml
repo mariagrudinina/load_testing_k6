@@ -1,0 +1,50 @@
+name: Push Container to Heroku!
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      output_port: ${{ steps.port.outputs.testport }}
+    steps:
+    - uses: actions/checkout@v1
+    
+    - name: Login to Heroku Container registry
+      env: 
+        HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+      run: heroku container:login
+    
+    - name: Build and push
+      env:
+        HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+      run: heroku container:push -a ${{ secrets.HEROKU_APP_NAME }} web 
+    
+    - name: Release
+      env:
+        HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+      run: heroku container:release -a ${{ secrets.HEROKU_APP_NAME }} web
+    
+    - name: Sleep
+      run: sleep 30
+
+  loadtest:
+    name: k6 local test run 
+    runs-on: ubuntu-latest
+    container: docker://grafana/k6:0.38.3
+    needs: [build]
+
+    - name: Checkout
+      uses: actions/checkout@v1
+    
+    - name: Run k6 local test
+      uses: k6io/action@v0.1
+      with:
+        filename: webtours.js
+      env:
+        HOST: ${{ secrets.HEROKU_APP_NAME }}.herokuapp.com
+        PORT: 443
